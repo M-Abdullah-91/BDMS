@@ -1,0 +1,23 @@
+FROM node:20-bookworm-slim
+
+ENV EXPO_TELEMETRY_DISABLED=1 \
+    CI=1
+
+WORKDIR /app
+
+# git is needed by some expo/metro tooling when resolving deps from github tarballs.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY mobile/package.json ./package.json
+COPY mobile/package-lock.json* ./
+RUN npm install
+
+COPY mobile/ ./
+
+# Expo web: 19006, Metro bundler: 8081, dev menu: 19000/19001/19002
+EXPOSE 19006 8081 19000 19001 19002
+
+# --host lan makes Metro bind to the container's LAN interface so the host can reach it.
+CMD ["npx", "expo", "start", "--web", "--port", "19006", "--host", "lan"]

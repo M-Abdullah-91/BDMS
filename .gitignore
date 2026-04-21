@@ -95,6 +95,7 @@ mobile/ios/DerivedData/
 # ---------- IDE / editor ----------
 .vscode/
 .idea/
+.claude/
 *.iml
 *.swp
 *.swo
@@ -106,6 +107,3 @@ Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 ehthumbs.db
-
-
-.env.example

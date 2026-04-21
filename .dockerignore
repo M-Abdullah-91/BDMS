@@ -1,0 +1,48 @@
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Python
+**/__pycache__
+**/*.pyc
+**/.venv
+**/venv
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.coverage
+**/htmlcov
+
+# Django
+backend/db.sqlite3
+backend/media
+backend/staticfiles
+backend/.env
+
+# Node
+**/node_modules
+**/.expo
+**/.expo-shared
+**/dist
+**/web-build
+mobile/android/build
+mobile/android/app/build
+mobile/ios/Pods
+mobile/ios/build
+
+# OS / editors
+.DS_Store
+Thumbs.db
+*.swp
+
+# Docker itself
+Dockerfile.*
+docker-compose*.yml
+.dockerignore
+
+# Charter
+charter.docx
+LICENSE
+README.md

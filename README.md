@@ -1,117 +1,188 @@
 # BDMS — VitalStream
 
 Blood Donation Management System.
-A Django REST backend + React Native (Expo) mobile app implementing the functionality described in `charter.docx`.
+Django REST backend + PostgreSQL + React Native (Expo) mobile client, implementing the functionality described in `charter.docx`.
 
 ## Repo layout
 
 ```
 BDMS/
-├── backend/      Django + DRF API (accounts, donors, hospitals, inventory, requests, donations)
-└── mobile/       React Native (Expo + TypeScript) app for donors and hospital admins
+├── Dockerfile.backend       # Django + DRF image
+├── Dockerfile.mobile        # Expo web image (Node 20)
+├── docker-compose.yml       # db + backend + mobile services
+├── backend.entrypoint.sh    # waits for Postgres, runs migrations, starts server
+├── .dockerignore
+├── .gitignore
+├── backend/                 # Django project
+│   ├── accounts/            # User + role + JWT auth
+│   ├── donors/              # DonorProfile, LabReport, cooldown
+│   ├── hospitals/           # Hospital profile
+│   ├── inventory/           # Blood inventory per hospital
+│   ├── requests_app/        # BloodRequest + RequestResponse
+│   ├── donations/           # Donation records (triggers cooldown + inventory ++)
+│   └── vitalstream/         # settings, urls, wsgi, asgi
+└── mobile/                  # Expo + TypeScript app
+    └── src/
+        ├── api/             # axios client + endpoint wrappers
+        ├── context/         # AuthContext
+        ├── navigation/      # Root/Auth/Donor/Hospital navigators
+        ├── screens/         # auth/, donor/, hospital/, shared/
+        └── components/      # Button, TextField, Chip
 ```
 
 ## Core features
 
-- **Role-based auth** (JWT): donor, hospital_admin, system_admin
+- **Role-based auth** (JWT): `donor`, `hospital_admin`, `system_admin`
 - **Donor registration** with blood group, phone, city
-- **Hospital registration** (creates a hospital linked to the admin user)
-- **Lab report upload + verification** — donor uploads PDF/image, hospital admin approves ⇒ donor becomes `is_verified`
-- **90-day cooldown**: recording a donation sets `last_donation_date`; `is_eligible` flips false until 90 days pass
-- **Blood requests**: hospitals post requests; donors see requests matching their blood group and city; donors can offer to help
-- **Inventory management**: each hospital maintains units per blood group; donation auto-increments inventory
-- **Donor search**: hospitals filter verified donors by blood group and city
+- **Hospital registration** (auto-creates a Hospital linked to the admin user)
+- **Lab report upload + verification** — donor uploads PDF/image, hospital admin approves → donor becomes `is_verified`
+- **90-day cooldown** — recording a donation sets `last_donation_date`; `is_eligible` is `false` for 90 days
+- **Blood requests** — hospitals post requests; donors see requests matching their blood group and city; donors can offer to help
+- **Inventory** — each hospital maintains units per blood group; a recorded donation auto-increments the right row
+- **Donor search** — hospital admins filter verified donors by blood group and city
 
-## Backend — setup
+## Quick start (Docker — recommended)
 
-From `backend/`:
+Prereqs: Docker Desktop (or Docker Engine + Compose plugin) and ~2GB free disk.
 
 ```bash
-# 1. Install pip inside the existing venv (Debian/Ubuntu/WSL only needs this once)
-sudo apt install python3-pip python3-venv python3-dev libpq-dev
-python3 -m venv .venv --upgrade-deps     # or: rm -rf .venv && python3 -m venv .venv
-source .venv/bin/activate
+cd /mnt/d/BDMS
 
-# 2. Install dependencies
-pip install -r requirements.txt
+# 1. Build and launch Postgres + Django + Expo web
+docker compose up --build
 
-# 3. Configure env
-cp .env.example .env
-# Edit .env. For quick local dev set DB_ENGINE=sqlite.
-# For Postgres (as charter specifies): create the db then keep DB_ENGINE=postgres.
-#     createdb vitalstream
-
-# 4. Create DB schema + admin user
-python manage.py makemigrations accounts donors hospitals inventory requests_app donations
-python manage.py migrate
-python manage.py createsuperuser
-
-# 5. Run
-python manage.py runserver 0.0.0.0:8000
+# 2. In a second terminal, create an admin account
+docker compose exec backend python manage.py createsuperuser
 ```
 
-Admin panel: http://127.0.0.1:8000/admin/
+Then:
 
-### API summary
+| Service        | URL                             |
+|----------------|---------------------------------|
+| Django API     | http://localhost:8000/api/      |
+| Django admin   | http://localhost:8000/admin/    |
+| Expo web app   | http://localhost:19006/         |
+| Metro bundler  | http://localhost:8081/          |
+| Postgres       | localhost:5432 (user `postgres`, db `vitalstream`) |
 
-| Method | Path                                  | Role            | Purpose                            |
-|--------|---------------------------------------|-----------------|------------------------------------|
-| POST   | /api/auth/register/                   | anonymous       | Register donor or hospital admin   |
-| POST   | /api/auth/login/                      | anonymous       | JWT access + refresh               |
-| POST   | /api/auth/refresh/                    | anonymous       | Refresh access token               |
-| GET    | /api/auth/me/                         | authenticated   | Current user                       |
-| GET    | /api/donors/me/                       | donor           | My donor profile                   |
-| PATCH  | /api/donors/me/                       | donor           | Update blood group, weight, etc.   |
-| GET    | /api/donors/me/eligibility/           | donor           | Cooldown status                    |
-| POST   | /api/donors/reports/upload/           | donor           | Upload lab report (multipart)      |
-| GET    | /api/donors/me/reports/               | donor           | My uploaded reports                |
-| GET    | /api/donors/reports/pending/          | hospital_admin  | Reports awaiting review            |
-| POST   | /api/donors/reports/{id}/review/      | hospital_admin  | Approve (verifies donor) or reject |
-| GET    | /api/donors/search/                   | hospital_admin  | Search verified donors             |
-| GET    | /api/hospitals/                       | authenticated   | List hospitals                     |
-| GET/PATCH | /api/hospitals/me/                 | hospital_admin  | My hospital profile                |
-| GET/POST | /api/inventory/me/                  | hospital_admin  | Own inventory                      |
-| PATCH/DEL | /api/inventory/me/{id}/            | hospital_admin  | Update/delete inventory row        |
-| GET    | /api/inventory/                       | authenticated   | Browse inventory across hospitals  |
-| GET    | /api/requests/                        | authenticated   | List requests (`?matching=1`)      |
-| POST   | /api/requests/                        | hospital_admin  | Create a blood request             |
-| PATCH  | /api/requests/{id}/status/            | hospital_admin  | Mark fulfilled / cancelled         |
-| POST   | /api/requests/{id}/respond/           | donor           | Offer to help with a request       |
-| GET    | /api/requests/{id}/responses/         | hospital_admin  | See donors who offered             |
-| GET    | /api/requests/my-responses/           | donor           | My offers                          |
-| POST   | /api/donations/record/                | hospital_admin  | Record a donation (cooldown + inv) |
-| GET    | /api/donations/mine/                  | donor           | Donation history                   |
-| GET    | /api/donations/hospital/              | hospital_admin  | Hospital's donation log            |
+### Overriding defaults
 
-## Mobile — setup
+Every secret/URL has a sensible default; override by creating a `.env` at the repo root. Example:
 
-From `mobile/`:
+```
+SECRET_KEY=change-me
+DEBUG=True
+ALLOWED_HOSTS=*
+DB_NAME=vitalstream
+DB_USER=postgres
+DB_PASSWORD=supersecret
+EXPO_PUBLIC_API_URL=http://localhost:8000/api
+```
+
+`docker compose` auto-reads `.env` in the same directory.
+
+### Common commands
 
 ```bash
+docker compose up                      # start
+docker compose up --build              # rebuild images then start
+docker compose down                    # stop (keeps data)
+docker compose down -v                 # stop and wipe pgdata / media volumes
+docker compose logs -f backend         # tail backend logs
+docker compose exec backend bash       # shell into the backend container
+docker compose exec db psql -U postgres vitalstream   # psql shell
+docker compose exec backend python manage.py shell    # Django shell
+```
+
+On first boot `backend.entrypoint.sh` waits for Postgres, runs
+`makemigrations → migrate → collectstatic`, then starts Django. So your database
+schema is always in sync with the models.
+
+### Phone testing with Expo Go
+
+The Expo web container serves at `localhost:19006`, but **native testing** (Expo Go
+app on a real phone, or Android/iOS emulator) is easier to run on the host because
+Expo Go needs to reach Metro on your LAN:
+
+```bash
+cd mobile
 npm install
-# Emulator (Android): API URL defaults to http://10.0.2.2:8000/api  (bridged to host localhost)
-# Physical device: edit mobile/app.json → expo.extra.apiBaseUrl to your machine's LAN IP, e.g.
-#   "apiBaseUrl": "http://192.168.1.20:8000/api"
+EXPO_PUBLIC_API_URL=http://<your-LAN-ip>:8000/api npx expo start
+```
+
+The backend is still in Docker (`localhost:8000` on the host, or `<LAN-ip>:8000`
+from the phone). Set `ALLOWED_HOSTS=*` in `.env` during dev.
+
+## Non-Docker fallback
+
+If you'd rather run without Docker, you need a local Postgres.
+
+```bash
+# Install a Postgres 14+ and create the db
+createdb vitalstream
+
+# Backend
+cd backend
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # edit DB_HOST/DB_USER/DB_PASSWORD to match your local PG
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver 0.0.0.0:8000
+
+# Mobile (separate terminal)
+cd mobile
+npm install
 npx expo start
 ```
 
-Press `a` for Android, `i` for iOS simulator, or scan the QR with Expo Go on device.
+## API summary
 
-## Testing flow end-to-end
+| Method   | Path                                  | Role            | Purpose                            |
+|----------|---------------------------------------|-----------------|------------------------------------|
+| POST     | /api/auth/register/                   | anonymous       | Register donor or hospital admin   |
+| POST     | /api/auth/login/                      | anonymous       | JWT access + refresh               |
+| POST     | /api/auth/refresh/                    | anonymous       | Refresh access token               |
+| GET      | /api/auth/me/                         | authenticated   | Current user                       |
+| GET      | /api/donors/me/                       | donor           | My donor profile                   |
+| PATCH    | /api/donors/me/                       | donor           | Update blood group, weight, etc.   |
+| GET      | /api/donors/me/eligibility/           | donor           | Cooldown status                    |
+| POST     | /api/donors/reports/upload/           | donor           | Upload lab report (multipart)      |
+| GET      | /api/donors/me/reports/               | donor           | My uploaded reports                |
+| GET      | /api/donors/reports/pending/          | hospital_admin  | Reports awaiting review            |
+| POST     | /api/donors/reports/{id}/review/      | hospital_admin  | Approve (verifies donor) or reject |
+| GET      | /api/donors/search/                   | hospital_admin  | Search verified donors             |
+| GET      | /api/hospitals/                       | authenticated   | List hospitals                     |
+| GET/PATCH| /api/hospitals/me/                    | hospital_admin  | My hospital profile                |
+| GET/POST | /api/inventory/me/                    | hospital_admin  | Own inventory                      |
+| PATCH/DEL| /api/inventory/me/{id}/               | hospital_admin  | Update / delete inventory row      |
+| GET      | /api/inventory/                       | authenticated   | Browse inventory across hospitals  |
+| GET      | /api/requests/                        | authenticated   | List requests (`?matching=1`)      |
+| POST     | /api/requests/                        | hospital_admin  | Create a blood request             |
+| PATCH    | /api/requests/{id}/status/            | hospital_admin  | Mark fulfilled / cancelled         |
+| POST     | /api/requests/{id}/respond/           | donor           | Offer to help with a request       |
+| GET      | /api/requests/{id}/responses/         | hospital_admin  | See donors who offered             |
+| GET      | /api/requests/my-responses/           | donor           | My offers                          |
+| POST     | /api/donations/record/                | hospital_admin  | Record a donation (cooldown + inv) |
+| GET      | /api/donations/mine/                  | donor           | Donation history                   |
+| GET      | /api/donations/hospital/              | hospital_admin  | Hospital's donation log            |
 
-1. Start backend on `0.0.0.0:8000`.
-2. In the mobile app, register a **hospital admin** → fill hospital name/city.
-3. Sign out, register a **donor** → pick blood group.
+## End-to-end smoke test
+
+1. `docker compose up --build`
+2. Open http://localhost:19006/ → **Register** as a hospital admin (e.g. "AKUH Karachi").
+3. Sign out, register a **Donor** (pick blood group).
 4. Donor → Profile → **Upload Lab Report** (any PDF/image).
 5. Sign out, sign in as the hospital admin → Home → **Review lab reports** → Approve.
-6. Donor is now verified and visible in **Find Donors**.
-7. Hospital admin → Requests → **New request** → donor sees it in the matching list.
-8. Donor **offers to help**; hospital admin sees the contact info.
-9. Hospital admin → **Record donation** → donor goes into 90-day cooldown; inventory increases.
+6. Donor is now `is_verified` and visible in **Find Donors**.
+7. Hospital admin → Requests → **New request** → donor sees it under **Matching requests**.
+8. Donor **offers to help**; hospital admin sees the donor's contact info.
+9. Hospital admin → **Record donation** → donor enters 90-day cooldown; inventory auto-increments.
 
 ## Notes on the charter
 
-- Charter originally specified Django Templates for the frontend. This build swaps that for a JSON REST API (DRF) consumed by a React Native mobile app — all the "Smart Cooldown", "Manual Verification" and "Blood Inventory" logic listed in the charter still lives server-side.
-- Cooldown length (`COOLDOWN_DAYS = 90`) is set in `backend/donors/models.py`.
-- The lab-report upload matches Week 15's **Lab Report Verification** module.
-- The inventory endpoints match Week 13's **blood inventory logic**.
+- Charter originally specified Django Templates for the frontend; this build uses DRF (JSON) + a React Native mobile client instead. All charter-specified domain logic — **Smart Cooldown**, **Manual Verification**, **Blood Inventory** — still lives server-side.
+- Cooldown length (`COOLDOWN_DAYS = 90`) is in `backend/donors/models.py`.
+- Lab-report verification corresponds to Week 15 of the roadmap.
+- Inventory endpoints correspond to Week 13.
+- Database is PostgreSQL per the charter.

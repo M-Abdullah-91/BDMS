@@ -3,7 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
 const apiBaseUrl =
-  (Constants.expoConfig?.extra as any)?.apiBaseUrl ?? 'http://10.0.2.2:8000/api';
+  process.env.EXPO_PUBLIC_API_URL ??
+  (Constants.expoConfig?.extra as any)?.apiBaseUrl ??
+  'http://10.0.2.2:8000/api';
 
 export const ACCESS_KEY = 'vs_access';
 export const REFRESH_KEY = 'vs_refresh';
