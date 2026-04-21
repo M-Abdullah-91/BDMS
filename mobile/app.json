@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "VitalStream",
+    "slug": "vitalstream",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#c0392b"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": { "supportsTablet": true },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#c0392b"
+      }
+    },
+    "web": { "favicon": "./assets/favicon.png" },
+    "extra": {
+      "apiBaseUrl": "http://10.0.2.2:8000/api"
+    }
+  }
+}

@@ -1,0 +1,108 @@
+# ---------- Secrets / env ----------
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ---------- Python / Django (backend) ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+pip-wheel-metadata/
+.Python
+
+# virtualenvs
+.venv/
+venv/
+env/
+ENV/
+
+# Django
+backend/db.sqlite3
+backend/db.sqlite3-journal
+backend/media/
+backend/staticfiles/
+backend/*.log
+celerybeat-schedule
+celerybeat.pid
+
+# test / coverage
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+htmlcov/
+coverage.xml
+nosetests.xml
+.tox/
+.nox/
+
+# mypy / ruff
+.mypy_cache/
+.ruff_cache/
+
+# ---------- Node / React Native / Expo (mobile) ----------
+mobile/node_modules/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.yarn/
+.pnp.*
+
+# Expo
+mobile/.expo/
+mobile/.expo-shared/
+mobile/dist/
+mobile/web-build/
+
+# React Native
+mobile/android/app/build/
+mobile/android/build/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/ios/Pods/
+mobile/ios/build/
+mobile/ios/DerivedData/
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+*.orig.*
+
+# Metro
+.metro-health-check*
+
+# Native build artefacts
+*.apk
+*.aab
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# TypeScript
+*.tsbuildinfo
+
+# ---------- IDE / editor ----------
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+.history/
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+ehthumbs.db
