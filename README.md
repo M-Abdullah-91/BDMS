@@ -1,7 +1,7 @@
 # BDMS — VitalStream
 
 Blood Donation Management System.
-Django REST backend + PostgreSQL + React Native (Expo) mobile client, implementing the functionality described in `charter.docx`.
+Django REST backend + PostgreSQL + React Native (Expo) mobile client
 
 ## Repo layout
 
@@ -184,10 +184,3 @@ npx expo start
 8. Donor **offers to help**; hospital admin sees the donor's contact info.
 9. Hospital admin → **Record donation** → donor enters 90-day cooldown; inventory auto-increments.
 
-## Notes on the charter
-
-- Charter originally specified Django Templates for the frontend; this build uses DRF (JSON) + a React Native mobile client instead. All charter-specified domain logic — **Smart Cooldown**, **Manual Verification**, **Blood Inventory** — still lives server-side.
-- Cooldown length (`COOLDOWN_DAYS = 90`) is in `backend/donors/models.py`.
-- Lab-report verification corresponds to Week 15 of the roadmap.
-- Inventory endpoints correspond to Week 13.
-- Database is PostgreSQL per the charter.
