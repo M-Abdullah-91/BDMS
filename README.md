@@ -48,12 +48,17 @@ Prereqs: Docker Desktop (or Docker Engine + Compose plugin) and ~2GB free disk.
 ```bash
 cd /mnt/d/BDMS
 
-# 1. Build and launch Postgres + Django + Expo web
-docker compose up --build
+# 1. (Optional) copy the env template and edit admin creds
+cp .env.example .env
 
-# 2. In a second terminal, create an admin account
-docker compose exec backend python manage.py createsuperuser
+# 2. Build and launch Postgres + Django + Expo web
+docker compose up --build
 ```
+
+On first boot the backend entrypoint waits for Postgres, runs migrations, collects static
+files, and auto-creates a Django superuser from `ADMIN_EMAIL` + `ADMIN_PASSWORD` (with
+`ADMIN_USERNAME` defaulting to `admin`). You can log in to `/admin/` immediately with
+whatever you set in `.env` (or the defaults `admin` / `admin`).
 
 Then:
 

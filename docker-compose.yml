@@ -30,6 +30,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_HOST: db
       DB_PORT: 5432
+      # Auto-provisioned superuser (read by backend.entrypoint.sh)
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@vitalstream.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
     volumes:
       - ./backend:/app
       - media:/app/media
