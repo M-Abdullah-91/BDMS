@@ -7,16 +7,39 @@ from .models import BloodRequest, RequestResponse
 
 class BloodRequestSerializer(serializers.ModelSerializer):
     hospital = HospitalPublicSerializer(read_only=True)
+    hospital_id = serializers.IntegerField(
+        write_only=True, required=False, allow_null=True,
+        help_text="Optional — patients can supply this to associate the request with a hospital.",
+    )
     response_count = serializers.IntegerField(source="responses.count", read_only=True)
+    requester_role = serializers.SerializerMethodField()
+    requester_name = serializers.SerializerMethodField()
+    requester_phone = serializers.SerializerMethodField()
 
     class Meta:
         model = BloodRequest
         fields = (
-            "id", "hospital", "blood_group", "units_needed", "patient_name",
-            "urgency", "status", "city", "notes", "needed_by",
-            "response_count", "created_at", "updated_at",
+            "id", "hospital", "hospital_id", "blood_group", "units_needed",
+            "patient_name", "urgency", "status", "city", "notes", "needed_by",
+            "response_count", "requester_role", "requester_name", "requester_phone",
+            "created_at", "updated_at",
         )
-        read_only_fields = ("id", "hospital", "status", "created_at", "updated_at")
+        read_only_fields = (
+            "id", "hospital", "status", "created_at", "updated_at",
+            "requester_role", "requester_name", "requester_phone",
+        )
+
+    def get_requester_role(self, obj):
+        return obj.created_by.role if obj.created_by_id else None
+
+    def get_requester_name(self, obj):
+        if not obj.created_by_id:
+            return None
+        u = obj.created_by
+        return u.get_full_name() or u.username
+
+    def get_requester_phone(self, obj):
+        return obj.created_by.phone if obj.created_by_id else None
 
 
 class BloodRequestStatusSerializer(serializers.ModelSerializer):

@@ -6,6 +6,7 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         DONOR = "donor", "Donor"
         HOSPITAL_ADMIN = "hospital_admin", "Hospital Admin"
+        PATIENT = "patient", "Patient"
         SYSTEM_ADMIN = "system_admin", "System Admin"
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.DONOR)
@@ -22,3 +23,7 @@ class User(AbstractUser):
     @property
     def is_hospital_admin(self) -> bool:
         return self.role == self.Role.HOSPITAL_ADMIN
+
+    @property
+    def is_patient(self) -> bool:
+        return self.role == self.Role.PATIENT

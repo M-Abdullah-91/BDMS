@@ -13,6 +13,21 @@ class IsHospitalAdmin(BasePermission):
         )
 
 
+class IsPatient(BasePermission):
+    def has_permission(self, request, view):
+        return bool(
+            request.user and request.user.is_authenticated and request.user.is_patient
+        )
+
+
+class IsPatientOrHospitalAdmin(BasePermission):
+    def has_permission(self, request, view):
+        u = request.user
+        return bool(
+            u and u.is_authenticated and (u.is_patient or u.is_hospital_admin)
+        )
+
+
 class IsSystemAdmin(BasePermission):
     def has_permission(self, request, view):
         return bool(

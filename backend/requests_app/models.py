@@ -18,7 +18,8 @@ class BloodRequest(models.Model):
         CANCELLED = "cancelled", "Cancelled"
 
     hospital = models.ForeignKey(
-        Hospital, on_delete=models.CASCADE, related_name="blood_requests"
+        Hospital, on_delete=models.CASCADE, related_name="blood_requests",
+        null=True, blank=True,
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,

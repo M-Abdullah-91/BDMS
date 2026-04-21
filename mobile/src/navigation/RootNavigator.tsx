@@ -6,6 +6,7 @@ import { colors } from '../theme/colors';
 import AuthNavigator from './AuthNavigator';
 import DonorTabs from './DonorTabs';
 import HospitalTabs from './HospitalTabs';
+import PatientTabs from './PatientTabs';
 
 const Stack = createNativeStackNavigator();
 
@@ -26,6 +27,8 @@ export default function RootNavigator() {
         <Stack.Screen name="Auth" component={AuthNavigator} />
       ) : user.role === 'hospital_admin' ? (
         <Stack.Screen name="Hospital" component={HospitalTabs} />
+      ) : user.role === 'patient' ? (
+        <Stack.Screen name="Patient" component={PatientTabs} />
       ) : (
         <Stack.Screen name="Donor" component={DonorTabs} />
       )}

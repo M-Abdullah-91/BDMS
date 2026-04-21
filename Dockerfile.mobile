@@ -1,7 +1,7 @@
 FROM node:20-bookworm-slim
 
 ENV EXPO_TELEMETRY_DISABLED=1 \
-    CI=1
+    REACT_NATIVE_PACKAGER_HOSTNAME=localhost
 
 WORKDIR /app
 
@@ -19,5 +19,7 @@ COPY mobile/ ./
 # Expo web: 19006, Metro bundler: 8081, dev menu: 19000/19001/19002
 EXPOSE 19006 8081 19000 19001 19002
 
-# --host lan makes Metro bind to the container's LAN interface so the host can reach it.
+# `--host lan` makes Metro bind to 0.0.0.0 (required for docker port forwarding).
+# REACT_NATIVE_PACKAGER_HOSTNAME=localhost (set at the top) rewrites the hostname
+# emitted in URLs so the browser on the host can fetch from localhost:8081.
 CMD ["npx", "expo", "start", "--web", "--port", "19006", "--host", "lan"]

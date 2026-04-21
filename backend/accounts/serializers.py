@@ -31,8 +31,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
 
     def validate_role(self, value):
-        if value not in (User.Role.DONOR, User.Role.HOSPITAL_ADMIN):
-            raise serializers.ValidationError("Role must be 'donor' or 'hospital_admin'.")
+        allowed = (User.Role.DONOR, User.Role.HOSPITAL_ADMIN, User.Role.PATIENT)
+        if value not in allowed:
+            raise serializers.ValidationError(
+                "Role must be 'donor', 'hospital_admin', or 'patient'."
+            )
         return value
 
     def validate(self, attrs):
@@ -41,6 +44,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"blood_group": "Required for donors."})
         if role == User.Role.HOSPITAL_ADMIN and not attrs.get("hospital_name"):
             raise serializers.ValidationError({"hospital_name": "Required for hospital admins."})
+        # Patients need no extra required fields — they can post requests with
+        # just a username/phone/city.
         return attrs
 
     @transaction.atomic

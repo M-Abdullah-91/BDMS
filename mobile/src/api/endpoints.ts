@@ -1,6 +1,6 @@
 import { api } from './client';
 
-export type Role = 'donor' | 'hospital_admin' | 'system_admin';
+export type Role = 'donor' | 'hospital_admin' | 'patient' | 'system_admin';
 
 export interface User {
   id: number;
@@ -49,7 +49,7 @@ export interface InventoryItem {
 
 export interface BloodRequest {
   id: number;
-  hospital: Hospital;
+  hospital: Hospital | null;
   blood_group: string;
   units_needed: number;
   patient_name: string;
@@ -59,6 +59,9 @@ export interface BloodRequest {
   notes: string;
   needed_by: string | null;
   response_count: number;
+  requester_role: Role | null;
+  requester_name: string | null;
+  requester_phone: string | null;
   created_at: string;
 }
 
@@ -122,9 +125,11 @@ export const fetchPublicInventory = (params?: Record<string, string | undefined>
 export const fetchBloodRequests = (params?: Record<string, string | undefined>) =>
   api.get('/requests/', { params });
 export const fetchMatchingRequests = () => api.get('/requests/', { params: { matching: '1' } });
+export const fetchMyRequests = () => api.get('/requests/', { params: { mine: '1' } });
 export const fetchBloodRequest = (id: number) => api.get<BloodRequest>(`/requests/${id}/`);
-export const createBloodRequest = (payload: Partial<BloodRequest>) =>
-  api.post('/requests/', payload);
+export const createBloodRequest = (
+  payload: Partial<BloodRequest> & { hospital_id?: number | null },
+) => api.post('/requests/', payload);
 export const updateRequestStatus = (id: number, status: string) =>
   api.patch(`/requests/${id}/status/`, { status });
 export const respondToRequest = (id: number, message?: string) =>
